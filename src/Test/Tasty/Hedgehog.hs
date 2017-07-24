@@ -82,6 +82,15 @@ instance IsOption HedgehogShrinkLimit where
   optionName = return "hedgehog-shrinks"
   optionHelp = return "Number of shrinks allowed before Hedgehog will fail a test"
 
+newtype HedgehogShrinkRetries = HedgehogShrinkRetries Int
+  deriving (Eq, Ord, Show, Num, Enum, Real, Integral, Typeable)
+
+instance IsOption HedgehogShrinkRetries where
+  defaultValue = 100
+  parseValue = fmap HedgehogShrinkRetries . safeRead
+  optionName = return "hedgehog-shrink-retriess"
+  optionHelp = return "Number of times to rerun a test during shrinking"
+
 reportToProgress :: Int
                  -> Int
                  -> Int
@@ -128,6 +137,7 @@ instance IsTest HP where
            , Option (Proxy :: Proxy HedgehogTestLimit)
            , Option (Proxy :: Proxy HedgehogDiscardLimit)
            , Option (Proxy :: Proxy HedgehogShrinkLimit)
+           , Option (Proxy :: Proxy HedgehogShrinkRetries)
            ]
 
   run opts (HP name (Property _ test)) yieldProgress = do
@@ -138,7 +148,8 @@ instance IsTest HP where
       HedgehogTestLimit       tests = lookupOption opts
       HedgehogDiscardLimit discards = lookupOption opts
       HedgehogShrinkLimit   shrinks = lookupOption opts
-      config = PropertyConfig (TestLimit tests) (DiscardLimit discards) (ShrinkLimit shrinks)
+      HedgehogShrinkRetries retries = lookupOption opts
+      config = PropertyConfig (TestLimit tests) (DiscardLimit discards) (ShrinkLimit shrinks) (ShrinkRetries retries)
 
     randSeed <- Seed.random
     let
